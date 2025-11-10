@@ -9,6 +9,11 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+// TEMPORARY DEBUG - REMOVE LATER
+console.log("Firebase Config loaded:", !!firebaseConfig);
+console.log("App ID:", appId);
+console.log("Auth Token exists:", !!initialAuthToken);
+
 // Context for Firebase and User Data
 const FirebaseContext = createContext(null);
 
@@ -49,7 +54,9 @@ const useFirebase = () => {
 
   useEffect(() => {
     if (!Object.keys(firebaseConfig).length) {
-      console.warn("Firebase config is missing or incomplete.");
+      console.error("Firebase config is missing or empty");
+      setError("Firebase configuration is missing");
+      setIsAuthReady(true); // Set to true even on error to show UI
       return;
     }
 
@@ -61,37 +68,44 @@ const useFirebase = () => {
       setDb(firestore);
       setAuth(authService);
 
-      // 1. Initial Authentication
-      const authenticate = async () => {
-        try {
-          if (initialAuthToken) {
-            await signInWithCustomToken(authService, initialAuthToken);
-            console.log("Signed in with custom token.");
-          } else {
-            await signInAnonymously(authService);
-            console.log("Signed in anonymously.");
-          }
-        } catch (e) {
-          console.error("Authentication failed:", e);
-          setError("Failed to sign in. Check console for details.");
-          await signInAnonymously(authService); // Fallback to anonymous sign-in
-        }
-      };
-
-      authenticate();
-
-      // 2. Auth State Listener (for getting the user object)
-      const unsubscribe = onAuthStateChanged(authService, (currentUser) => {
-        setUser(currentUser);
+      // Auth state listener with timeout
+      const authTimeout = setTimeout(() => {
+        console.warn("Auth state change taking too long, forcing ready state");
         setIsAuthReady(true);
-        console.log("Auth state changed. User ID:", currentUser?.uid);
+      }, 10000); // 10 second timeout
+
+      const unsubscribe = onAuthStateChanged(authService, async (currentUser) => {
+        clearTimeout(authTimeout);
+        
+        if (currentUser) {
+          setUser(currentUser);
+          setIsAuthReady(true);
+          console.log("Auth successful. User ID:", currentUser.uid);
+        } else {
+          // No user, try to authenticate
+          try {
+            if (initialAuthToken) {
+              await signInWithCustomToken(authService, initialAuthToken);
+            } else {
+              await signInAnonymously(authService);
+            }
+          } catch (authError) {
+            console.error("Authentication failed:", authError);
+            setError("Authentication failed. Check console for details.");
+            setIsAuthReady(true); // Continue to app even if auth fails
+          }
+        }
       });
 
-      return () => unsubscribe();
+      return () => {
+        clearTimeout(authTimeout);
+        unsubscribe();
+      };
       
     } catch (e) {
       console.error("Firebase initialization failed:", e);
-      setError("Firebase initialization failed. Check console.");
+      setError("Firebase initialization failed.");
+      setIsAuthReady(true); // Continue to app even if Firebase fails
     }
   }, []);
 
@@ -360,7 +374,7 @@ const App = () => {
   const firebaseData = useFirebase();
   const { isAuthReady, error } = firebaseData;
 
-  if (!isAuthReady) {
+  if (!isAuthReady && !error) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center">
@@ -369,7 +383,6 @@ const App = () => {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
           <p className="mt-4 text-gray-600 font-medium">Connecting to BarterBite network...</p>
-          {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
         </div>
       </div>
     );
@@ -381,6 +394,14 @@ const App = () => {
         <Navbar />
         
         <div className="max-w-4xl mx-auto p-4 sm:p-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <h3 className="text-red-800 font-semibold">Connection Issue</h3>
+              <p className="text-red-600 text-sm mt-1">{error}</p>
+              <p className="text-red-600 text-sm mt-2">The app will continue in limited mode.</p>
+            </div>
+          )}
+          
           <h1 className="text-3xl font-extrabold text-gray-900 mb-6">BarterBite Market Feed</h1>
           <p className="text-gray-600 mb-8">Trade locally grown or prepared food items—no cash required! All listings are public for this app ID: <span className='font-mono text-xs text-green-700 break-all'>{appId}</span></p>
 
