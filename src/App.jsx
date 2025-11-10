@@ -33,24 +33,15 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // --- CONFIGURATION ---
 const getFirebaseConfig = () => {
-  if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-    try {
-      return JSON.parse(__firebase_config);
-    } catch (e) {
-      console.error("Error parsing __firebase_config:", e);
-    }
-  }
-  
-  if (process.env.REACT_APP_FIREBASE_CONFIG) {
-    try {
-      return JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
-    } catch (e) {
-      console.error("Error parsing REACT_APP_FIREBASE_CONFIG:", e);
-    }
-  }
-  
-  console.warn("No Firebase configuration found");
-  return {};
+  // Your actual Firebase configuration
+  return {
+    apiKey: "AIzaSyCL3nmvDtX7QO-xqVCVQg3vGVD2weVhgpM",
+    authDomain: "barterbite-c735d.firebaseapp.com",
+    projectId: "barterbite-c735d",
+    storageBucket: "barterbite-c735d.firebasestorage.app",
+    messagingSenderId: "77392068948",
+    appId: "1:77392068948:web:036761985e672f80f708c1"
+  };
 };
 
 const getAppId = () => {
@@ -66,6 +57,12 @@ const getAuthToken = () => {
 const appId = getAppId();
 const firebaseConfig = getFirebaseConfig();
 const initialAuthToken = getAuthToken();
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 // --- NIGERIAN LOCATION DATABASE ---
 const nigerianLocations = {
