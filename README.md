@@ -15,6 +15,19 @@ BarterBite is a *React web app* that allows users to trade food items directly w
 - Frontend: React (Create React App)
 - Backend: None (static React app deployed on Vercel)
 - Deployment: Vercel (free hosting)
+```
+|   barterbite_output.txt
+|   
++---package.json
++---postcss.config.js
++---public
+|   \---index.html
++---src
+|   +---App.jsx
+|   +---index.css
+|   \---index.js
+\---tailwind.config.js
+```
 
 ## Getting Started
 
