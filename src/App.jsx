@@ -109,8 +109,7 @@ const useListings = () => {
 
     // Path: /artifacts/{appId}/public/data/listings
     const collectionPath = `artifacts/${appId}/public/data/listings`;
-    // FIX APPLIED: Semicolon added to satisfy strict linter, solving the (111:38) error
-    const listingsCollection = collection(db, collectionPath); 
+    const listingsCollection = collection(db, collectionPath);
     
     // Using a simple query without orderBy for broader compatibility with security rules/indexes
     const q = query(listingsCollection);
@@ -401,4 +400,3 @@ const App = () => {
 };
 
 export default App;
-```eof
